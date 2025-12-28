@@ -1,0 +1,42 @@
+@startuml
+title ER-диаграмма: order_db
+
+entity "carts" as carts {
+  * id : int <<PK>>
+  --
+  user_id : int
+  created_at : timestamptz
+}
+
+entity "cart_items" as cart_items {
+  * id : int <<PK>>
+  --
+  cart_id : int <<FK>>
+  book_id : int
+  quantity : int
+}
+
+entity "orders" as orders {
+  * id : int <<PK>>
+  --
+  user_id : int
+  status : varchar(32)
+  total_amount : numeric(10,2)
+  created_at : timestamptz
+}
+
+entity "order_items" as order_items {
+  * id : int <<PK>>
+  --
+  order_id : int <<FK>>
+  book_id : int
+  quantity : int
+  price : numeric(10,2)
+}
+
+carts ||--o{ cart_items : "1..* items"
+orders ||--o{ order_items : "1..* items"
+
+@enduml
+
+

@@ -1,0 +1,57 @@
+@startuml
+' Упрощённая C4-style диаграмма компонентов
+
+!define COMPONENT(x,y,label,descr) rectangle "label" as x <<y>> {
+  descr
+}
+
+title Компонентная диаграмма: онлайн-магазин книг
+
+actor User as user
+node "Internet" {
+  node "Client (Browser / Mobile)" as client
+}
+
+node "KursachBackend (Monorepo)" {
+  node "auth-service\n(port 8001)" as auth <<Microservice>>
+  node "catalog-service\n(port 8002)" as catalog <<Microservice>>
+  node "order-service\n(port 8003)" as order <<Microservice>>
+  node "analytics-service\n(port 8004)" as analytics <<Microservice>>
+}
+
+node "Infrastructure" {
+  database "PostgreSQL\n(auth_db, catalog_db, order_db, analytics_db)" as pg
+  node "RabbitMQ\nbookstore.events (topic)" as mq
+  node "External Books API\n(Open Library / Google Books)" as extApi
+}
+
+user --> client : использует
+client --> auth : HTTP /auth/*
+client --> catalog : HTTP /books/*
+client --> order : HTTP /cart/*, /orders/*
+client --> analytics : HTTP /events (опционально)
+
+auth --> pg : auth_db\n(SQLAlchemy ORM)
+catalog --> pg : catalog_db\n(SQLAlchemy ORM)
+order --> pg : order_db\n(SQLAlchemy ORM)
+analytics --> pg : analytics_db\n(SQLAlchemy ORM)
+
+catalog --> extApi : httpx\nимпорт по ISBN
+
+order --> mq : publish\norder.created
+order --> mq : publish\nstock.reserve.request
+catalog --> mq : consume\nstock.reserve.request
+catalog --> mq : publish\nstock.reserve.succeeded / failed
+order --> mq : consume\nstock.reserve.succeeded / failed
+analytics --> mq : consume\norder.created,\nstock.reserve.*
+
+mq --> order : события\nstock.reserve.*
+mq --> analytics : события\norder.created,\nstock.reserve.*
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam defaultTextAlignment center
+
+@enduml
+
+

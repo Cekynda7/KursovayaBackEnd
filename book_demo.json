@@ -1,0 +1,9 @@
+﻿{
+  "title": "Defense Demo Book 20251224-212947",
+  "description": "Книга для демонстрации защиты.",
+  "isbn": "DEF-20251224-212947-2089",
+  "price": 499,
+  "author_name": "Demo Author 20251224-212947",
+  "category_names": ["Demo-20251224-212947", "Testing-20251224-212947"],
+  "stock_quantity": 1
+}

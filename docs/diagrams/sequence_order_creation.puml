@@ -1,0 +1,63 @@
+@startuml
+title Последовательность: создание заказа и резервирование стока
+
+actor Client
+participant "order-service" as Order
+participant "catalog-service" as Catalog
+participant "RabbitMQ\nbookstore.events" as MQ
+participant "analytics-service" as Analytics
+
+== Создание заказа ==
+Client -> Order : POST /orders\nAuthorization: Bearer <JWT>
+activate Order
+
+Order -> Order : Валидация JWT, определение user_id
+Order -> Order : Чтение корзины пользователя из order_db
+
+opt для каждой позиции корзины
+  Order -> Catalog : HTTP GET /books/{book_id}
+  activate Catalog
+  Catalog --> Order : 200 OK\n{price, title, ...}
+  deactivate Catalog
+end
+
+Order -> Order : Расчёт total_amount\nсоздание записи Order + OrderItems
+Order -> Order : Очистка корзины\ncommit в order_db
+
+== Публикация доменных событий ==
+Order -> MQ : publish order.created\n(exchange=bookstore.events,\n routingKey=order.created,\n payload={order_id, user_id, items, ...})
+Order -> MQ : publish stock.reserve.request\n(exchange=bookstore.events,\n routingKey=stock.reserve.request,\n payload={order_id, items, ...})
+
+MQ -> Analytics : deliver order.created
+activate Analytics
+Analytics -> Analytics : Сохранение события в analytics_db
+deactivate Analytics
+
+== Резервирование стока в catalog-service ==
+MQ -> Catalog : deliver stock.reserve.request
+activate Catalog
+Catalog -> Catalog : Проверка наличия Stock\nпо каждому book_id
+
+alt достаточно стока
+  Catalog -> Catalog : Уменьшение quantity в stock\ncommit в catalog_db
+  Catalog -> MQ : publish stock.reserve.succeeded\npayload={order_id, items}
+else недостаточно стока
+  Catalog -> MQ : publish stock.reserve.failed\npayload={order_id, reason}
+end
+deactivate Catalog
+
+MQ -> Order : deliver stock.reserve.succeeded / failed
+Order -> Order : Обновление статуса заказа\n(created -> reserved / failed)\ncommit в order_db
+
+MQ -> Analytics : deliver stock.reserve.succeeded / failed
+activate Analytics
+Analytics -> Analytics : Сохранение события в analytics_db
+deactivate Analytics
+
+== Ответ клиенту ==
+Order --> Client : 201 Created\n{order_id, status, total_amount, items}
+deactivate Order
+
+@enduml
+
+

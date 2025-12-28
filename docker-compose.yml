@@ -1,0 +1,89 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: bookstore-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: bookstore-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+  auth-service:
+    build: ./services/auth_service
+    container_name: auth-service
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: auth_service
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/auth_db
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      - postgres
+      - rabbitmq
+    ports:
+      - "8001:8000"
+
+  catalog-service:
+    build: ./services/catalog_service
+    container_name: catalog-service
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: catalog_service
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/catalog_db
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      - postgres
+      - rabbitmq
+    ports:
+      - "8002:8000"
+
+  order-service:
+    build: ./services/order_service
+    container_name: order-service
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: order_service
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/order_db
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      - postgres
+      - rabbitmq
+    ports:
+      - "8003:8000"
+
+  analytics-service:
+    build: ./services/analytics_service
+    container_name: analytics-service
+    env_file:
+      - .env
+    environment:
+      SERVICE_NAME: analytics_service
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/analytics_db
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      - postgres
+      - rabbitmq
+    ports:
+      - "8004:8000"
+
+volumes:
+  postgres_data:
+
+

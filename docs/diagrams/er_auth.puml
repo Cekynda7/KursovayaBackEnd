@@ -1,0 +1,27 @@
+@startuml
+title ER-диаграмма: auth_db
+
+entity "users" as users {
+  * id : int <<PK>>
+  --
+  email : varchar(255) <<UNIQUE>>
+  password_hash : varchar(255)
+  role : enum('user','admin')
+  is_active : bool
+  created_at : timestamptz
+}
+
+entity "refresh_tokens" as tokens {
+  * id : int <<PK>>
+  --
+  user_id : int
+  token : varchar(512) <<UNIQUE>>
+  created_at : timestamptz
+  is_revoked : bool
+}
+
+users ||--o{ tokens : "1..* refresh_tokens\nper user"
+
+@enduml
+
+

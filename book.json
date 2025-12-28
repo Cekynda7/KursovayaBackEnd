@@ -1,0 +1,9 @@
+﻿{
+  "title": "Clean Code (Defense Demo)",
+  "description": "Демо-книга для защиты курсовой.",
+  "isbn": "9780132350884-202512211509",
+  "price": 999,
+  "author_name": "Robert C. Martin",
+  "category_names": ["Programming", "Software Engineering"],
+  "stock_quantity": 5
+}

@@ -1,0 +1,17 @@
+@startuml
+title ER-диаграмма: analytics_db
+
+entity "events" as events {
+  * id : int <<PK>>
+  --
+  routing_key : varchar(128)
+  idempotency_key : varchar(64)
+  occurred_at : timestamptz
+  payload : jsonb
+}
+
+' В данной БД только одна таблица событий
+
+@enduml
+
+

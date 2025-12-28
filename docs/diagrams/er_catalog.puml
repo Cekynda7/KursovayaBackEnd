@@ -1,0 +1,49 @@
+@startuml
+title ER-диаграмма: catalog_db
+
+entity "authors" as authors {
+  * id : int <<PK>>
+  --
+  name : varchar(255) <<UNIQUE>>
+}
+
+entity "categories" as categories {
+  * id : int <<PK>>
+  --
+  name : varchar(255) <<UNIQUE>>
+}
+
+entity "books" as books {
+  * id : int <<PK>>
+  --
+  title : varchar(255)
+  description : text
+  isbn : varchar(32) <<UNIQUE>>
+  price : numeric(10,2)
+  author_id : int <<FK>>
+  created_at : timestamptz
+}
+
+entity "book_categories" as book_categories {
+  * id : int <<PK>>
+  --
+  book_id : int <<FK>>
+  category_id : int <<FK>>
+}
+
+entity "stock" as stock {
+  * id : int <<PK>>
+  --
+  book_id : int <<FK, UNIQUE>>
+  quantity : int
+}
+
+authors ||--o{ books : "1..* книги автора"
+books ||--o{ book_categories : "1..* категорий"
+categories ||--o{ book_categories : "1..* книг"
+
+books ||--|| stock : "1..1 stock\nper book"
+
+@enduml
+
+
